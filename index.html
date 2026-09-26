@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#163e32">
+  <title>Better Basket · Scanner</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header><a href="./" class="brand"><span class="brand-icon">▥</span> Better Basket</a><span class="badge">SCANNER / 01</span></header>
+  <main>
+    <section class="intro"><p class="eyebrow">A BETTER BASKET STARTS HERE</p><h1>Scan something<br>good.</h1><p>Start with a barcode. Build your basket, one product at a time.</p></section>
+    <div class="layout">
+      <section class="card scanner" aria-label="Barcode scanner">
+        <div class="card-heading"><h2>Scan a product</h2><span id="state" class="pill">Camera off</span></div>
+        <div class="viewfinder" id="viewfinder">
+          <video id="video" autoplay muted playsinline aria-label="Camera preview"></video>
+          <div class="camera-placeholder" id="placeholder"><span class="barcode-art" aria-hidden="true"></span><strong>Ready when you are</strong><span>Enable your camera to scan a barcode</span></div>
+          <div class="scan-guide" aria-hidden="true"></div>
+          <span class="viewfinder-caption">Keep the full barcode inside the frame</span>
+        </div>
+        <div class="scanner-controls">
+          <label for="camera">Camera</label><select id="camera"><option value="">Automatic · prefer rear camera</option></select>
+          <div class="button-row"><button id="start" class="primary">Start camera <span aria-hidden="true">↗</span></button><button id="stop" disabled>Stop</button></div>
+          <p id="status" role="status" aria-live="polite">Camera frames stay on your device.</p>
+        </div>
+        <details><summary>Barcode not scanning?</summary><p>Use bright, even light. Hold the package steady and move a little farther away so the camera can focus. You can also enter the printed digits below.</p><form id="manual-form"><label for="manual">UPC / EAN barcode</label><div class="button-row"><input id="manual" inputmode="numeric" autocomplete="off" placeholder="e.g. 012345678905" required><button type="submit">Add</button></div><p id="manual-error" role="alert"></p></form></details>
+      </section>
+      <aside>
+        <section class="card result-card"><p class="eyebrow">LATEST SCAN</p><p id="lookup-status" role="status" aria-live="polite"></p><img id="product-image" hidden alt="" referrerpolicy="no-referrer"><h2 id="result-title">Your first find<br>is up next.</h2><p id="result-description">Scan a packaged product to identify it.</p><code id="result-code" hidden></code><div class="button-row"><button id="copy" hidden>Copy barcode</button><button id="retry-lookup" hidden>Retry lookup</button></div><a id="product-source" hidden target="_blank" rel="noopener noreferrer">View on Barcode Lookup ↗</a></section>
+        <section class="card history-card"><div class="card-heading"><h2>Your scans <span id="count">0</span></h2><button id="clear" class="text-button" disabled>Clear</button></div><p id="empty">A little empty for now.<br>Your scanned products will appear here.</p><ol id="history"></ol><button id="export" disabled>Export JSON ↓</button></section>
+        <p class="footnote">Product details by Barcode Lookup. Only barcode numbers are sent for lookup; camera frames stay on your device. Scans are kept until you reload.</p>
+      </aside>
+    </div>
+  </main>
+  <footer>Small choices. Better baskets.<span>UPC · EAN</span></footer>
+</body>
+</html>
