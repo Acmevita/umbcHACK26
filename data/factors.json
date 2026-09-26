@@ -1,0 +1,349 @@
+{
+  "schema_version": 1,
+  "source": {
+    "id": "poore_nemecek_2018_owid",
+    "citation": "Poore and Nemecek (2018), Reducing food’s environmental impacts through producers and consumers; processed by Our World in Data.",
+    "url": "https://ourworldindata.org/grapher/ghg-per-kg-poore",
+    "csv_url": "https://ourworldindata.org/grapher/ghg-per-kg-poore.csv",
+    "metadata_url": "https://api.ourworldindata.org/v1/indicators/1206176.metadata.json",
+    "dataset_version": "2019-10-08",
+    "reference_year": 2010,
+    "reference_year_note": "Dataset time marker; not a measurement year for a scanned product.",
+    "geography": "Global; not US-specific",
+    "unit": "kg_CO2e_per_kg_food",
+    "boundary": "cradle_to_retail",
+    "included": [
+      "land_use_change",
+      "agriculture_and_feed",
+      "processing",
+      "packaging",
+      "transport_to_retail",
+      "retail"
+    ],
+    "excluded": [
+      "consumer_transport",
+      "home_storage",
+      "home_cooking",
+      "household_waste"
+    ],
+    "methodology_url": "https://ourworldindata.org/faqs-environmental-impacts-food",
+    "license": {
+      "owid_processing": "CC BY (attribute OWID and original authors)",
+      "owid_non_redistributable": false,
+      "third_party_notice": "Original third-party terms also apply. Supplementary producer-level files are not included."
+    },
+    "csv_sha256": "4c44efb5691f50dae1577a3a774178db119c77e661daea47ac3a7472b828fd41",
+    "limitations": [
+      "Category proxy, not a measured brand footprint.",
+      "No numerical uncertainty or producer percentiles in this imported table.",
+      "No stage-level figures in this imported table.",
+      "Does not cover all foods or processed recipes."
+    ]
+  },
+  "factors": [
+    {
+      "id": "apples",
+      "label": "Apples",
+      "kg_co2e_per_kg": 0.43,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "bananas",
+      "label": "Bananas",
+      "kg_co2e_per_kg": 0.86,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "barley",
+      "label": "Barley",
+      "kg_co2e_per_kg": 1.18,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "beef_beef_herd",
+      "label": "Beef (beef herd)",
+      "kg_co2e_per_kg": 99.48,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "beef_dairy_herd",
+      "label": "Beef (dairy herd)",
+      "kg_co2e_per_kg": 33.3,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "beet_sugar",
+      "label": "Beet Sugar",
+      "kg_co2e_per_kg": 1.81,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "berries_grapes",
+      "label": "Berries & Grapes",
+      "kg_co2e_per_kg": 1.53,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "brassicas",
+      "label": "Brassicas",
+      "kg_co2e_per_kg": 0.51,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "cane_sugar",
+      "label": "Cane Sugar",
+      "kg_co2e_per_kg": 3.2,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "cassava",
+      "label": "Cassava",
+      "kg_co2e_per_kg": 1.32,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "cheese",
+      "label": "Cheese",
+      "kg_co2e_per_kg": 23.88,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "citrus_fruit",
+      "label": "Citrus Fruit",
+      "kg_co2e_per_kg": 0.39,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "coffee",
+      "label": "Coffee",
+      "kg_co2e_per_kg": 28.53,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "dark_chocolate",
+      "label": "Dark Chocolate",
+      "kg_co2e_per_kg": 46.65,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "eggs",
+      "label": "Eggs",
+      "kg_co2e_per_kg": 4.67,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "fish_farmed",
+      "label": "Fish (farmed)",
+      "kg_co2e_per_kg": 13.63,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "groundnuts",
+      "label": "Groundnuts",
+      "kg_co2e_per_kg": 3.23,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "lamb_mutton",
+      "label": "Lamb & Mutton",
+      "kg_co2e_per_kg": 39.72,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "maize",
+      "label": "Maize",
+      "kg_co2e_per_kg": 1.7,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "milk",
+      "label": "Milk",
+      "kg_co2e_per_kg": 3.15,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "nuts",
+      "label": "Nuts",
+      "kg_co2e_per_kg": 0.43,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "oatmeal",
+      "label": "Oatmeal",
+      "kg_co2e_per_kg": 2.48,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "onions_leeks",
+      "label": "Onions & Leeks",
+      "kg_co2e_per_kg": 0.5,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "other_fruit",
+      "label": "Other Fruit",
+      "kg_co2e_per_kg": 1.05,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "other_pulses",
+      "label": "Other Pulses",
+      "kg_co2e_per_kg": 1.79,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "other_vegetables",
+      "label": "Other Vegetables",
+      "kg_co2e_per_kg": 0.53,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "peas",
+      "label": "Peas",
+      "kg_co2e_per_kg": 0.98,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "pig_meat",
+      "label": "Pig Meat",
+      "kg_co2e_per_kg": 12.31,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "potatoes",
+      "label": "Potatoes",
+      "kg_co2e_per_kg": 0.46,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "poultry_meat",
+      "label": "Poultry Meat",
+      "kg_co2e_per_kg": 9.87,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "prawns_farmed",
+      "label": "Prawns (farmed)",
+      "kg_co2e_per_kg": 26.87,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "rice",
+      "label": "Rice",
+      "kg_co2e_per_kg": 4.45,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "root_vegetables",
+      "label": "Root Vegetables",
+      "kg_co2e_per_kg": 0.43,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "soy_milk",
+      "label": "Soy milk",
+      "kg_co2e_per_kg": 0.98,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "tofu",
+      "label": "Tofu",
+      "kg_co2e_per_kg": 3.16,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "tomatoes",
+      "label": "Tomatoes",
+      "kg_co2e_per_kg": 2.09,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "wheat_rye",
+      "label": "Wheat & Rye",
+      "kg_co2e_per_kg": 1.57,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    },
+    {
+      "id": "wine",
+      "label": "Wine",
+      "kg_co2e_per_kg": 1.79,
+      "statistic": "global_mean",
+      "source_id": "poore_nemecek_2018_owid",
+      "producer_range": null
+    }
+  ]
+}

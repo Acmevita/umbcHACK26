@@ -1,10 +1,29 @@
 import io
 import json
 import unittest
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 
 import server
+
+
+class EnvironmentTests(unittest.TestCase):
+    def test_dotenv_without_terminal_injection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / '.env').write_text('BARCODE_LOOKUP_API_KEY="fixture-file-key"\n')
+            with patch('server.ROOT', root), patch.dict('os.environ', {}, clear=True):
+                self.assertEqual(server.api_key(), 'fixture-file-key')
+
+    def test_environment_variable_takes_precedence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / '.env').write_text('BARCODE_LOOKUP_API_KEY=fixture-file-key\n')
+            with patch('server.ROOT', root), patch.dict('os.environ',
+                    {'BARCODE_LOOKUP_API_KEY': 'fixture-environment-key'}, clear=True):
+                self.assertEqual(server.api_key(), 'fixture-environment-key')
 
 
 class LookupTests(unittest.TestCase):

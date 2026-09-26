@@ -5,17 +5,21 @@ import os
 import re
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
+from impact import lookup_impact
+
 ROOT = Path(__file__).resolve().parent
 STATIC = {'/': ('index.html', 'text/html'), '/index.html': ('index.html', 'text/html'),
           '/app.js': ('app.js', 'text/javascript'), '/styles.css': ('styles.css', 'text/css')}
 CACHE = {}
 LOCK = threading.Lock()
+IMPACT_POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix='impact')
 
 
 class LookupError(Exception):
@@ -115,7 +119,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path)
-        if path.path == '/api/products':
+        if path.path in ('/api/products', '/api/impact'):
             # No cross-origin use of the local credentialed endpoint.
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -123,7 +127,28 @@ class Handler(BaseHTTPRequestHandler):
                 return
             barcode = parse_qs(path.query).get('barcode', [''])[0]
             try:
-                result = {'product': lookup_product(barcode)}
+                if not valid_barcode(barcode):
+                    raise LookupError(400, 'Enter a valid UPC/EAN barcode including its check digit.')
+                if path.path == '/api/impact':
+                    start = time.perf_counter()
+                    job = IMPACT_POOL.submit(lookup_impact, barcode)
+                    try:
+                        result = job.result(timeout=15)
+                    except FutureTimeout:
+                        job.cancel()
+                        raise LookupError(504, 'Environmental lookup exceeded its 15-second processing deadline. Retry later.') from None
+                    result['processing_ms'] = round((time.perf_counter() - start) * 1000, 2)
+                    summary = result['impact']
+                    print('Environmental estimate: ' + json.dumps({
+                        'status': summary['status'],
+                        'title': result['open_food_facts'].get('product', {}).get('title'),
+                        'kg_co2e_per_package': summary.get('per_package_kg_co2e'),
+                        'reason': summary.get('reason'),
+                        'geography': summary['geography'],
+                    }, ensure_ascii=True), flush=True)
+                else:
+                    result = {'product': lookup_product(barcode)}
+                    print('Product found: ' + json.dumps(result['product']['title'], ensure_ascii=True), flush=True)
                 code = 200
             except LookupError as error:
                 result, code = {'error': error.message}, error.status

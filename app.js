@@ -64,6 +64,7 @@ function recordBarcode(code, source) {
   // Integration point for the product database in the next phase.
   window.dispatchEvent(new CustomEvent('barcode:scanned', {detail: {...latest}}));
   lookupProduct(latest);
+  lookupImpact(latest);
   return true;
 }
 
@@ -113,6 +114,125 @@ async function lookupProduct(scan) {
   }
 }
 
+// Plain-language text for the backend's abstention reasons; never show null as zero.
+const IMPACT_REASONS = {
+  no_supported_category: 'This food type isn’t in our emissions table yet.',
+  conflicting_categories: 'This product matched more than one food category, so we won’t guess.',
+  processed_or_composite_food_needs_its_own_factor: 'Processed or mixed foods need their own factor. A raw-ingredient average would mislead.',
+  open_food_facts_not_found: 'Open Food Facts has no record of this barcode.',
+  open_food_facts_local_rate_limit: 'Too many lookups in the last minute. Retry shortly.',
+  open_food_facts_rate_limited: 'Open Food Facts is rate-limiting requests. Retry shortly.',
+  missing_package_quantity: 'The package size is not listed, so only the per-kg figure is shown.',
+  unsupported_quantity_format: 'The package size couldn’t be read, so only the per-kg figure is shown.',
+  ambiguous_multipack_quantity: 'The multipack size is ambiguous, so only the per-kg figure is shown.',
+  invalid_quantity: 'The listed package size is invalid, so only the per-kg figure is shown.',
+  conflicting_quantity_labels: 'The package lists conflicting sizes, so only the per-kg figure is shown.',
+  density_required_for_mass_factor: 'The size is a volume. We don’t guess density, so only the per-kg figure is shown.',
+};
+const kg = (value) => `${Number(value.toFixed(value < 1 ? 3 : 2))}`;
+
+function impactReason(reason) {
+  return IMPACT_REASONS[reason] || (reason?.startsWith('open_food_facts_')
+    ? 'Open Food Facts is unavailable right now. Retry shortly.' : 'Not enough data for an estimate.');
+}
+
+function renderImpact(scan) {
+  if (latest !== scan) return;
+  const card = $('impact-card');
+  card.hidden = !scan;
+  if (!scan) return;
+  const data = scan.impact;
+  const impact = data?.impact;
+  const offProduct = data?.open_food_facts?.product;
+  const transient = impact => impact?.reason?.startsWith('open_food_facts_') && impact.reason !== 'open_food_facts_not_found';
+  $('retry-impact').hidden = !(scan.impactError || transient(data?.impact));
+  $('impact-number').textContent = $('impact-unit').textContent = '';
+  $('impact-geo').hidden = $('impact-details').hidden = true;
+  if (!impact) {
+    $('impact-state').textContent = scan.impactError ? 'Unavailable' : 'Estimating…';
+    $('impact-summary').textContent = scan.impactError || 'Matching this product to a food category…';
+    return;
+  }
+  const factor = impact.factor;
+  if (impact.status === 'estimated') {
+    $('impact-state').textContent = 'Estimated';
+    $('impact-number').textContent = kg(impact.per_package_kg_co2e);
+    $('impact-unit').textContent = 'kg CO₂e per package';
+    $('impact-summary').textContent = `Based on the average for ${factor.label.toLowerCase()}: ${kg(impact.per_kg_food_kg_co2e)} kg CO₂e per kg.`;
+  } else if (impact.status === 'category_only') {
+    $('impact-state').textContent = 'Per kg only';
+    $('impact-number').textContent = kg(impact.per_kg_food_kg_co2e);
+    $('impact-unit').textContent = `kg CO₂e per kg of ${factor.label.toLowerCase()}`;
+    $('impact-summary').textContent = impactReason(impact.reason);
+  } else {
+    $('impact-state').textContent = 'No estimate';
+    $('impact-summary').textContent = impactReason(impact.reason);
+  }
+  if (!factor) return;
+  $('impact-geo').hidden = $('impact-details').hidden = false;
+  const agribalyse = factor.source_id === 'agribalyse_3_2';
+  const proxy = impact.classification.method === 'off_agribalyse_proxy';
+  $('impact-geo').textContent = `${agribalyse ? 'AGRIBALYSE' : 'Global'} category average${proxy ? ' · closest-match proxy' : ''} · ${impact.geography.split(';')[0]} data, not US-specific`;
+  const calc = impact.calculation;
+  const source = impact.source;
+  const rows = [
+    ['Product', offProduct ? `${offProduct.title}${offProduct.quantity ? ' · ' + offProduct.quantity : ''}` : '—'],
+    ['Category', agribalyse ? `${factor.label} (AGRIBALYSE ${factor.agribalyse_code}, ${proxy ? 'category proxy' : 'matched'} by Open Food Facts)`
+      : `${factor.label} (matched tag ${impact.classification.matched_tags.join(', ')})`],
+    ['Formula', calc ? `${calc.mass_kg} kg × ${calc.factor_kg_co2e_per_kg} kg CO₂e/kg = ${kg(impact.per_package_kg_co2e)} kg CO₂e` : 'Package mass unknown; no total calculated'],
+    ['Stages', impact.stages ? Object.entries(impact.stages.per_package || impact.stages.per_kg)
+      .map(([stage, value]) => `${stage === 'transportation' ? 'transport' : stage} ${kg(value)}`).join(' · ')
+      + (impact.stages.per_package ? ' kg CO₂e' : ' kg CO₂e per kg') : 'No stage breakdown for this product'],
+    ['Boundary', source.boundary_label || `Farm to retail shelf. Excludes ${source.excluded.map((item) => item.replace(/_/g, ' ')).join(', ')}.`],
+    ['Source', source.citation + (factor.dqr ? ` Data quality rating ${factor.dqr.toFixed(1)} (1 = best, 5 = worst).` : '')],
+    ['Caveats', [impact.classification.validation, ...impact.assumptions].filter(Boolean).join(' ')],
+  ];
+  $('impact-evidence').replaceChildren(...rows.flatMap(([label, text]) => {
+    const dt = document.createElement('dt');
+    const dd = document.createElement('dd');
+    dt.textContent = label;
+    dd.textContent = text;
+    return [dt, dd];
+  }));
+  const links = document.createElement('dd');
+  links.append(...[[offProduct?.source_url, 'Open Food Facts record'], [source.url, 'Emissions dataset']]
+    .filter(([href]) => href).flatMap(([href, text], index) => {
+      const link = document.createElement('a');
+      link.href = href; link.target = '_blank'; link.rel = 'noopener noreferrer';
+      link.textContent = text + ' ↗';
+      return index ? [' · ', link] : [link];
+    }));
+  const linksLabel = document.createElement('dt');
+  linksLabel.textContent = 'Links';
+  $('impact-evidence').append(linksLabel, links);
+}
+
+async function lookupImpact(scan) {
+  if (scan.impactPending) return;
+  scan.impactPending = true;
+  scan.impactError = '';
+  renderImpact(scan);
+  const abort = new AbortController();
+  const timeout = setTimeout(() => abort.abort(), 20000);
+  try {
+    const response = await fetch(`/api/impact?barcode=${encodeURIComponent(scan.barcode)}`, {signal: abort.signal});
+    if (!response.headers.get('content-type')?.includes('application/json')) {
+      throw new Error('Start the app with python3 server.py and open localhost:8001 to enable footprint estimates.');
+    }
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Footprint lookup failed. Please retry.');
+    if (!data.impact?.status) throw new Error('The footprint lookup returned no estimate.');
+    scan.impact = data;
+  } catch (error) {
+    scan.impactError = error.name === 'AbortError' ? 'Footprint lookup timed out. Please retry.'
+      : error instanceof TypeError ? 'Could not reach the lookup server. Check your connection and retry.' : error.message;
+  } finally {
+    clearTimeout(timeout);
+    scan.impactPending = false;
+    if (scans.includes(scan)) { renderImpact(scan); renderHistory(); }
+  }
+}
+
 function renderHistory() {
   $('count').textContent = scans.length;
   $('empty').hidden = scans.length > 0;
@@ -126,7 +246,8 @@ function renderHistory() {
     const code = document.createElement('strong');
     code.textContent = scan.product?.title || scan.barcode;
     const meta = document.createElement('small');
-    meta.textContent = `${scan.product ? scan.barcode + ' · ' : ''}${scan.source === 'camera' ? 'Camera' : 'Manual entry'} · ${new Date(scan.scannedAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
+    const footprint = scan.impact?.impact?.status === 'estimated' ? `${kg(scan.impact.impact.per_package_kg_co2e)} kg CO₂e · ` : '';
+    meta.textContent = `${footprint}${scan.product ? scan.barcode + ' · ' : ''}${scan.source === 'camera' ? 'Camera' : 'Manual entry'} · ${new Date(scan.scannedAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
     content.append(code, meta);
     row.append(number, content);
     return row;
@@ -220,9 +341,11 @@ $('clear').addEventListener('click', () => {
   $('product-image').hidden = $('product-source').hidden = $('retry-lookup').hidden = true;
   $('product-image').removeAttribute('src');
   $('lookup-status').textContent = '';
+  $('impact-card').hidden = true;
   status('Scan history cleared.');
 });
 $('retry-lookup').addEventListener('click', () => { if (latest) lookupProduct(latest); });
+$('retry-impact').addEventListener('click', () => { if (latest) lookupImpact(latest); });
 $('product-image').addEventListener('error', () => { $('product-image').hidden = true; });
 $('export').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([JSON.stringify({schemaVersion: 1, scans}, null, 2)], {type: 'application/json'}));
