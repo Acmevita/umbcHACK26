@@ -168,6 +168,7 @@ function renderImpact(scan) {
     $('impact-state').textContent = 'No estimate';
     $('impact-summary').textContent = impactReason(impact.reason);
   }
+  renderAlternatives(scan);
   if (!factor) return;
   $('impact-geo').hidden = $('impact-details').hidden = false;
   const agribalyse = factor.source_id === 'agribalyse_3_2';
@@ -207,6 +208,82 @@ function renderImpact(scan) {
   $('impact-evidence').append(linksLabel, links);
 }
 
+const ALTERNATIVE_REASONS = {
+  no_lower_candidates: 'Already among the lowest-carbon options in its category.',
+  no_realistic_substitute: 'No realistic lower-carbon swap in its category.',
+  gemini_missing_api_key: 'Add GEMINI_API_KEY to the server’s .env file to enable swaps.',
+  gemini_rate_limited: 'The AI service is busy. Try again shortly.',
+};
+
+function renderAlternatives(scan) {
+  const box = $('alternatives');
+  const code = scan.impact?.impact?.factor?.agribalyse_code;
+  box.hidden = !code;
+  if (!code) return;
+  const data = scan.alternatives;
+  const items = data?.alternatives || [];
+  $('alternatives-note').hidden = !items.length;
+  $('alternatives-status').hidden = items.length > 0;
+  $('alternatives-status').textContent = scan.alternativesError
+    || (!data ? 'Finding lower-carbon swaps…' : ALTERNATIVE_REASONS[data.reason] || 'Swaps are unavailable right now.');
+  $('alternatives-list').replaceChildren(...items.map((item) => {
+    const row = document.createElement('li');
+    const products = document.createElement('div');
+    products.className = 'swap-products';
+    (item.examples || []).forEach((example) => {
+      const link = document.createElement('a');
+      link.className = 'swap-product';
+      link.href = example.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+      if (example.image) {
+        const image = document.createElement('img');
+        image.src = example.image; image.alt = ''; image.loading = 'lazy'; image.referrerPolicy = 'no-referrer';
+        image.addEventListener('error', () => image.remove());
+        link.append(image);
+      }
+      const text = document.createElement('span');
+      const brand = document.createElement('b');
+      // Show the full name when it already starts with the brand ("Mountain Dew Maui Burst").
+      const branded = example.name.toLowerCase().startsWith(example.brand.toLowerCase());
+      brand.textContent = branded ? example.name : example.brand;
+      text.append(brand, branded ? '' : ' ' + example.name, example.quantity ? ` · ${example.quantity}` : '');
+      link.append(text);
+      products.append(link);
+    });
+    const category = document.createElement(item.examples?.length ? 'small' : 'strong');
+    category.className = item.examples?.length ? 'swap-category' : '';
+    category.textContent = item.examples?.length ? `Food type: ${item.label}` : item.label;
+    const numbers = document.createElement('span');
+    numbers.className = 'alternative-numbers';
+    numbers.textContent = `${item.reduction_percent}% lower · ${kg(item.kg_co2e_per_kg)} kg CO₂e/kg`
+      + (item.kg_co2e_saved_per_package ? ` · saves ~${kg(item.kg_co2e_saved_per_package)} kg per package` : '');
+    const reason = document.createElement('small');
+    reason.textContent = (item.fit === 'same_use' ? 'Same use. ' : 'Similar use. ') + item.reason;
+    row.append(...(item.examples?.length ? [products, category] : [category]), numbers, reason);
+    return row;
+  }));
+}
+
+async function lookupAlternatives(scan) {
+  const impact = scan.impact?.impact;
+  const code = impact?.factor?.agribalyse_code;
+  if (!code || scan.alternativesPending) return;
+  scan.alternativesPending = true;
+  scan.alternativesError = '';
+  scan.alternatives = null;
+  const mass = impact.calculation?.mass_kg;
+  try {
+    const response = await fetch(`/api/alternatives?code=${encodeURIComponent(code)}${mass ? '&mass_kg=' + mass : ''}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Swaps are unavailable right now.');
+    scan.alternatives = data;
+  } catch (error) {
+    scan.alternativesError = error instanceof TypeError ? 'Could not reach the lookup server.' : error.message;
+  } finally {
+    scan.alternativesPending = false;
+    if (latest === scan) renderAlternatives(scan);
+  }
+}
+
 async function lookupImpact(scan) {
   if (scan.impactPending) return;
   scan.impactPending = true;
@@ -223,6 +300,7 @@ async function lookupImpact(scan) {
     if (!response.ok) throw new Error(data.error || 'Footprint lookup failed. Please retry.');
     if (!data.impact?.status) throw new Error('The footprint lookup returned no estimate.');
     scan.impact = data;
+    lookupAlternatives(scan);
   } catch (error) {
     scan.impactError = error.name === 'AbortError' ? 'Footprint lookup timed out. Please retry.'
       : error instanceof TypeError ? 'Could not reach the lookup server. Check your connection and retry.' : error.message;

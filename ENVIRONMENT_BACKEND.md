@@ -40,6 +40,25 @@ Rebuild offline: `.venv/bin/python import_agribalyse.py --csv data/source/agriba
 
 Live checks on 2026-09-26 (single lookups, not coverage statistics): Red Bull Zero 250 mL → 0.171; Cheerios 510 g → 1.73; tortilla chips 28.3 g → 0.066; Deer Park water 16.9 fl oz → 0.160; plain tofu 500 g → 0.5 kg CO₂e per package.
 
+## Lower-carbon swaps (`/api/alternatives`)
+
+`GET /api/alternatives?code=<AGRIBALYSE code>&mass_kg=<optional>`. The frontend calls it automatically after an AGRIBALYSE-based estimate.
+
+1. **Candidates (code):** foods in the same AGRIBALYSE subgroup whose kg CO₂e/kg is at least 20% lower.
+2. **Selection (Gemini):** the model picks up to 3 candidates a shopper would realistically buy instead, and gives a one-sentence reason. It uses structured JSON output and sees only the candidate list.
+3. **Validation (code):** picks whose code wasn't offered, duplicates and malformed items are discarded.
+4. **Numbers (code):** percent reduction and kg saved per package come from AGRIBALYSE and the package mass. The model supplies no numbers.
+
+**Speed:** results are keyed by AGRIBALYSE code, not barcode, and precomputed into `data/substitutes.json`, so scans don't wait on Gemini. A code missing from the file triggers one live call (~5 s) whose result is saved. Foods with no lower-carbon candidates skip the model.
+
+**Precompute:** `.venv/bin/python precompute_substitutes.py`. It's resumable and batches ~15 same-subgroup foods per request, so ~2,100 foods take ~170 requests. This fits the free tier's 15 requests/minute; rate limits are retried automatically.
+
+**Real product examples:** each swap food gets up to 3 US products from Open Food Facts' search service (search.openfoodfacts.org), sorted by scan popularity. The OFF category taxonomy (`data/off_categories.json`, built by `import_off_categories.py`) links AGRIBALYSE codes to OFF categories. A product is kept only if its own categories resolve to that same AGRIBALYSE food and to no other. Results are cached in `data/swap_examples.json`; fill it with `.venv/bin/python precompute_examples.py` (~30 searches/minute). A food with no qualifying US product falls back to its category name.
+
+**Config:** `GEMINI_API_KEY` in `.env` (or the environment). `GEMINI_MODEL` defaults to `gemini-3.5-flash-lite`.
+
+**Limits:** suggestions are food categories, not specific US products or brands. Many AGRIBALYSE rows share a proxy value, so several suggestions can show the same footprint. Substitutability judgments have not been evaluated yet. Next step: hand-review a random sample and report the share judged realistic.
+
 ## Response contract
 
 `schema_version`, `barcode`, `processing_ms`, `open_food_facts`, and `impact` are top-level fields.

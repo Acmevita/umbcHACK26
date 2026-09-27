@@ -12,6 +12,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
+from alternatives import lookup_alternatives
 from impact import lookup_impact
 
 ROOT = Path(__file__).resolve().parent
@@ -107,6 +108,26 @@ def lookup_product(barcode):
         return result
 
 
+def alternatives_response(query):
+    code = query.get('code', [''])[0]
+    if not re.fullmatch(r'[0-9]{1,6}(?:_[0-9])?', code):
+        raise LookupError(400, 'Provide an AGRIBALYSE food code.')
+    try:
+        mass_kg = float(query.get('mass_kg', [''])[0])
+    except ValueError:
+        mass_kg = None
+    job = IMPACT_POOL.submit(lookup_alternatives, code, mass_kg)
+    try:
+        result = job.result(timeout=25)
+    except FutureTimeout:
+        job.cancel()
+        raise LookupError(504, 'Finding alternatives took too long. Retry later.') from None
+    print('Alternatives: ' + json.dumps({'code': code, 'status': result['status'], 'origin': result.get('origin'),
+                                         'picks': [item['label'] for item in result['alternatives']]},
+                                        ensure_ascii=True), flush=True)
+    return result
+
+
 class Handler(BaseHTTPRequestHandler):
     def send_body(self, code, body, content_type):
         self.send_response(code)
@@ -119,17 +140,20 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path)
-        if path.path in ('/api/products', '/api/impact'):
+        if path.path in ('/api/products', '/api/impact', '/api/alternatives'):
             # No cross-origin use of the local credentialed endpoint.
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
                 self.send_body(403, b'{"error":"Cross-origin lookup is not allowed."}', 'application/json')
                 return
-            barcode = parse_qs(path.query).get('barcode', [''])[0]
+            query = parse_qs(path.query)
+            barcode = query.get('barcode', [''])[0]
             try:
-                if not valid_barcode(barcode):
+                if path.path == '/api/alternatives':
+                    result = alternatives_response(query)
+                elif not valid_barcode(barcode):
                     raise LookupError(400, 'Enter a valid UPC/EAN barcode including its check digit.')
-                if path.path == '/api/impact':
+                elif path.path == '/api/impact':
                     start = time.perf_counter()
                     job = IMPACT_POOL.submit(lookup_impact, barcode)
                     try:
